@@ -1,5 +1,6 @@
 package contactapi.service;
 
+import ch.qos.logback.core.encoder.EchoEncoder;
 import contactapi.domain.Contact;
 import contactapi.repository.ContactRepository;
 import jakarta.transaction.Transactional;
@@ -9,6 +10,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import static contactapi.constant.Constant.PHOTO_DIRECTORY;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Service
 @Slf4j
@@ -35,4 +49,35 @@ public class ContactService {
         contactRepository.deleteById(contact.getId());
     }
 
+    public String uploadPhoto(String id, MultipartFile file){
+        // Find the contact
+        Contact contact = getContact(id);
+
+        String photoURL = photoFunction.apply(id, file);
+        contact.setPhotoURL(photoURL);
+        contactRepository.save(contact);
+        return photoURL;
+    }
+
+    private final Function<String, String> fileExtension = filename -> Optional.of(filename).filter( name -> name.contains("."))
+            .map(name -> "." + name.substring(filename.lastIndexOf('.') + 1)).orElse("");
+
+
+    private final BiFunction<String, MultipartFile, String > photoFunction = (id, image) -> {
+        String fileName = id + "." + fileExtension.apply(id);
+        try {
+            Path fileStorageLocation = Paths.get(PHOTO_DIRECTORY).toAbsolutePath().normalize();
+
+            if (!Files.exists(fileStorageLocation)) {
+                Files.createDirectory(fileStorageLocation);
+            }
+
+            Files.copy(image.getInputStream(), fileStorageLocation.resolve(id + fileExtension.apply(image.getOriginalFilename())), REPLACE_EXISTING);
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("contacts/image/" + fileName)
+                    .toString();
+        } catch (Exception exception) {
+            throw new RuntimeException("Unable to save image.");
+        }
+    };
 }
