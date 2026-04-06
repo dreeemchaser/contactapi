@@ -1,6 +1,5 @@
 package contactapi.service;
 
-import ch.qos.logback.core.encoder.EchoEncoder;
 import contactapi.domain.Contact;
 import contactapi.repository.ContactRepository;
 import jakarta.transaction.Transactional;
@@ -16,7 +15,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -50,7 +48,7 @@ public class ContactService {
     }
 
     public String uploadPhoto(String id, MultipartFile file){
-        // Find the contact
+        log.info("Saving picture for user ID: " + id);
         Contact contact = getContact(id);
 
         String photoURL = photoFunction.apply(id, file);
