@@ -39,7 +39,7 @@ public class ContactService {
         return contactRepository.findById(id).orElseThrow(() -> new RuntimeException("Contact not found. "));
     }
 
-    public Contact saveContact(Contact contact){
+    public Contact createContact(Contact contact){
         return contactRepository.save(contact);
     }
 
